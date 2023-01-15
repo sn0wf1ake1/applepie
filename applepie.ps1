@@ -16,7 +16,7 @@ for($i = 0; $i -lt $password.Length - 2; $i++) {
 $y = $y -replace "[^0-9]" # Remove all non-digit characters
 
 for($i = 0; $i -lt $y.Length - 2; $i++) {
-    $z += [System.Convert]::ToString(([int]$y.Substring($i,2) + [int]$y.Substring($i + 1,2)) % 11) # Additional necessary entropy
+    $z += [System.Convert]::ToString(([int]$y.Substring($i,2) + [int]$y.Substring($i + 1,2)) + $i % 11) # Additional necessary entropy
 }
 
 $z = $z -replace "[8]" -replace(9,1) # 8 is irrelavent because it will loop back to the same result in a 8x8 grid. 9 leaps over so replace it with 1
