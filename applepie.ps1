@@ -19,7 +19,7 @@ for($i = 0; $i -lt $y.Length - 2; $i++) {
     $z += [System.Convert]::ToString(([int]$y.Substring($i,2) + [int]$y.Substring($i + 1,2)) % 11) # Additional necessary entropy
 }
 
-$z = $z -replace "[8]" -replace(9,1) # 8 is irrelavent because it will loop back to the same result in a 8x8 grid. 9 leaps over so replace it with 1 which is the same outcome
+$z = $z -replace "[8]" -replace(9,1) # 8 is irrelavent because it will loop back to the same result in a 8x8 grid. 9 leaps over so replace it with 1
 $password = $z.Substring($z.Length % 16) # Trim to fit in a 16 byte rotations (8 shifts horizontal and 8 shifts vertical)
 <# End #>
 
@@ -137,7 +137,6 @@ applepie_reverse($password[0..15])
 break
 <#
 Example; if 1 in passcode, shift 7 places (8 - 1 = 7)
-
 1 = 7
 2 = 6
 3 = 5
