@@ -83,7 +83,7 @@ function shift_vertical {
     if($shifts % 8 -ne 0) {
         [array]$data_temp = $null
         [byte]$j = 0
-        
+
         for($i = 0; $i -le 7; $i++) {
             $data_temp += $data[$i * 8 + $row]
         }
