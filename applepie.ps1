@@ -61,7 +61,7 @@ function shift_horizontal {
         [Parameter(Mandatory = $true)] [byte]$shifts
     )
 
-    if($shifts -ne 0 -and $shifts -ne 8) {
+    if($shifts % 8 -ne 0) {
         [byte]$j = 0
 
         $data_temp = $data[($row * 8)..($row * 8 + 7)]
@@ -80,7 +80,7 @@ function shift_vertical {
         [Parameter(Mandatory = $true)] [byte]$shifts
     )
 
-    if($shifts -ne 0 -and $shifts -ne 8) {
+    if($shifts % 8 -ne 0) {
         [array]$data_temp = $null
         [byte]$j = 0
         
