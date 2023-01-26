@@ -1,6 +1,6 @@
 Clear-Host
 
-$password = 'sn0wf1ake1'
+[string]$password = 'sn0wf1ake1'
 $password += $password.ToUpper() + $password.ToLower()
 $password = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($password))
 [string]$x,$y,$z = $null
@@ -8,7 +8,7 @@ $password = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($pas
 $password
 
 <# Passcode generation start #>
-for($i = 0; $i -lt $password.Length - 2; $i++) {
+for([int]$i = 0; $i -lt $password.Length - 2; $i++) {
     $x += [System.Convert]::ToString([math]::Sqrt([byte][char]$password[$i] + [byte][char]$password[$i + 1] + [byte][char]$password[$i + 2]))
     $y += $x.Substring($x.Length / 2)
 }
@@ -24,10 +24,8 @@ $password = $z.Substring($z.Length % 16) # Trim to fit in a 16 byte rotations (8
 <# End #>
 
 <# Debug info #>
-#$x
-#$x.Length
 $password
-$password.Length
+#$password.Length
 <# End #>
 
 <# Test data start #>
@@ -46,14 +44,14 @@ function display_grid {
                 ($data[56..63] -join ' '))
 }
 
-$data = ('A','B','C','D','E','F','G','H',
-         'I','J','K','L','M','N','O','P',
-         'Q','R','S','T','U','V','W','X',
-         'Y','Z','Æ','Ø','Å','1','2','3',
-         '4','5','6','7','8','9','0','a',
-         'b','c','d','e','f','g','h','i',
-         'j','k','l','m','n','o','p','q',
-         'r','s','t','u','v','w','x','y')
+[array]$data = ('A','B','C','D','E','F','G','H',
+                'I','J','K','L','M','N','O','P',
+                'Q','R','S','T','U','V','W','X',
+                'Y','Z','Æ','Ø','Å','1','2','3',
+                '4','5','6','7','8','9','0','a',
+                'b','c','d','e','f','g','h','i',
+                'j','k','l','m','n','o','p','q',
+                'r','s','t','u','v','w','x','y')
 
 function shift_horizontal {
     param(
@@ -67,11 +65,14 @@ function shift_horizontal {
         $data_temp = $data[($row * 8)..($row * 8 + 7)]
         $data_temp = $data_temp[$shifts..7] + $data_temp
 
-        for($i = $row * 8; $i -le $row * 8 + 7; $i++) {
+        for([byte]$i = $row * 8; $i -le $row * 8 + 7; $i++) {
             $data[$i] = $data_temp[$j]
             $j++
         }
     }
+
+    Write-Host ("`n" + 'Horizontal  ' + $row + ' ' + $shifts)
+    display_grid($data)
 }
 
 function shift_vertical {
@@ -84,7 +85,7 @@ function shift_vertical {
         [array]$data_temp = $null
         [byte]$j = 0
 
-        for($i = 0; $i -le 7; $i++) {
+        for([byte]$i = 0; $i -le 7; $i++) {
             $data_temp += $data[$i * 8 + $row]
         }
 
@@ -94,6 +95,9 @@ function shift_vertical {
             $j++
         }
     }
+
+    Write-Host ("`n" + 'Vertical    ' + $row + ' ' + $shifts)
+    display_grid($data)
 }
 
 function applepie {
@@ -102,7 +106,7 @@ function applepie {
     )
     [byte]$x,$y = 0
 
-    for($i = 0; $i -le 15; $i++) {
+    for([byte]$i = 0; $i -le 15; $i++) {
         if($i % 2 -eq 0) {
             shift_horizontal $x ([byte]$password.Substring($i,1))
             $x++
@@ -114,39 +118,21 @@ function applepie {
 }
 
 applepie($data)
-display_grid($data)
-break
-$password[0..15] -join ' '
+Write-Host ($null)
 
+<# Decode #>
 function applepie_reverse {
     param(
-        [Parameter(Mandatory = $true)] [array]$password
+        [Parameter(Mandatory = $true)] [array]$data
     )
-    [array]$password_reversed = $null
 
-    for($i = 0; $i -le 15; $i++) {
-        $password_reversed += 8 - $password[15 - $i].ToString() # Strangest type conversion ever but necessary. 8 minus to loop back to origin
+    for([int]$i = 7; $i -ge 0; $i--) { # Integer data type because .NET is not happy about the $i-- part
+        $i = [byte]$i # Cast back to byte just for safety and memory reasons
+        $x = [byte]$password.Substring($i * 2,1) # Horizontal shift number of the block
+        $y = [byte]$password.Substring($i * 2 + 1,1) # Vertical shift number of the block
+
+        Write-Host ($i.ToString() + ' ' + $x.ToString() + ' ' + $y.ToString())
     }
-    $password_reversed -join ' '
 }
 
-applepie_reverse($password[0..15])
-
-#$password_temp = [array]::Reverse($password[0..15])
-#$password_temp -join ' '
-break
-<#
-Example; if 1 in passcode, shift 7 places (8 - 1 = 7)
-1 = 7
-2 = 6
-3 = 5
-4 = 4
-5 = 3
-6 = 2
-7 = 1
-#>
-
-shift_horizontal 0 7
-shift_horizontal 0 1
-
-display_grid($data)
+applepie_reverse($data)
