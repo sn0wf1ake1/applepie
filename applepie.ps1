@@ -17,7 +17,7 @@ for([int]$i = 0; $i -lt $password.Length - 2; $i++) {
 $y = $y -replace "[^0-9]" # Remove all non-digit characters like "." and "," and spaces
 
 for($i = 0; $i -lt $y.Length - 2; $i++) {
-    $z += [System.Convert]::ToString(([int]$y.Substring($i,2) + [int]$y.Substring($i + 1,2)) + $i % 11) # Additional necessary entropy
+    $z += [System.Convert]::ToString(([byte]$y.Substring($i,2) + [byte]$y.Substring($i + 1,2)) + $i % 11) # Additional necessary entropy
 }
 
 # 0 and 8 could technically be dropped but adds to entropy. 9 leaps over so replace it with 1. Replace XXXX numbers with their counterparts X
