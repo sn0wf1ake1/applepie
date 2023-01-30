@@ -20,7 +20,18 @@ for($i = 0; $i -lt $y.Length - 2; $i++) {
     $z += [System.Convert]::ToString(([int]$y.Substring($i,2) + [int]$y.Substring($i + 1,2)) + $i % 11) # Additional necessary entropy
 }
 
-$z = $z -replace(9,1) -replace(000,0) -replace(111,1) -replace(222,2) -replace(333,3) -replace(444,4) -replace(555,5) -replace(666,6) -replace(777,7) -replace(888,8) # 0 and 8 could technically be dropped but adds to entropy. 9 leaps over so replace it with 1. Replace 111 with 5 counteracts the 9 scheme
+# 0 and 8 could technically be dropped but adds to entropy. 9 leaps over so replace it with 1. Replace 111 with 5 counteracts the 9 scheme
+$z = $z -replace(9,1)
+        -replace(0000,0)
+        -replace(1111,1)
+        -replace(2222,2)
+        -replace(3333,3)
+        -replace(4444,4)
+        -replace(5555,5)
+        -replace(6666,6)
+        -replace(7777,7)
+        -replace(8888,8)
+
 $password = $z.Substring($z.Length % 16) # Trim to fit in a 16 byte rotations (8 shifts horizontal and 8 shifts vertical)
 <# End #>
 
