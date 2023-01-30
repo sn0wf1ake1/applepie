@@ -1,8 +1,9 @@
 Clear-Host
 
 [string]$password = 'sn0wf1ake1'
-$password += $password.ToUpper() + $password.ToLower()
-$password = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($password))
+$password += $password.ToUpper() + $password.ToLower() # Add entropy
+$password += $password.Length * 7 # Add more entropy. 7 because of highest single digit prime number and no fancy math::PI stuff with weird digit encoding
+$password = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($password)) # Universal welldocumented format automatically also adds another twist
 [string]$x,$y,$z = $null
 
 $password
@@ -10,22 +11,22 @@ $password
 <# Passcode generation start #>
 for([int]$i = 0; $i -lt $password.Length - 2; $i++) {
     $x += [System.Convert]::ToString([math]::Sqrt([byte][char]$password[$i] + [byte][char]$password[$i + 1] + [byte][char]$password[$i + 2]))
-    $y += $x.Substring($x.Length / 2)
+    $y += $x.Substring($x.Length % 11)
 }
 
-$y = $y -replace "[^0-9]" # Remove all non-digit characters
+$y = $y -replace "[^0-9]" # Remove all non-digit characters like "." and "," and spaces
 
 for($i = 0; $i -lt $y.Length - 2; $i++) {
     $z += [System.Convert]::ToString(([int]$y.Substring($i,2) + [int]$y.Substring($i + 1,2)) + $i % 11) # Additional necessary entropy
 }
 
-$z = $z -replace(9,1) # 0 and 8 could technically be dropped but adds to entropy. 9 leaps over so replace it with 1
+$z = $z -replace(9,1) -replace(111,3) -replace(666,5) -replace(888,7) # 0 and 8 could technically be dropped but adds to entropy. 9 leaps over so replace it with 1. Replace 111 with 5 counteracts the 9 scheme
 $password = $z.Substring($z.Length % 16) # Trim to fit in a 16 byte rotations (8 shifts horizontal and 8 shifts vertical)
 <# End #>
 
 <# Debug info #>
 $password
-#$password.Length
+$password.Length
 <# End #>
 
 <# Test data start #>
@@ -132,6 +133,9 @@ function applepie_reverse {
         $y = [byte]$password.Substring($i * 2 + 1,1) # Vertical shift number of the block
 
         Write-Host ($i.ToString() + ' ' + $x.ToString() + ' ' + $y.ToString())
+        #shift_vertical $y $data
+        #display_grid($data)
+        #Write-Host ($null)
     }
 }
 
