@@ -1,5 +1,15 @@
 Clear-Host
 
+<#
+Applepie: An 8x8 grid of shifting data horisontally and vertically
+
+1) Comments. Lots and lots of comments so anyone can easily understand what is going on
+2) Avoid division at all costs. PowerShell is already kind of a slow language and division costs a lot of CPU power
+3) Avoid floating points at all costs. Sometimes it's neccesary though for things like square root
+4) Strongly defined data types, i.e. no accidental casting from byte to integer. Casting to string is unavoidable though
+5) No external modules allowed
+#>
+
 [string]$password = 'sn0wf1ake1'
 $password += $password.ToUpper() + $password.ToLower() # Add entropy
 $password += $password.Length * 7 # Add more entropy. 7 because of highest single digit prime number and no fancy math::PI stuff with weird digit encoding
@@ -17,18 +27,19 @@ for([int]$i = 0; $i -lt $password.Length - 2; $i++) {
 $y = $y -replace "[^0-9]" # Remove all non-digit characters like "." and "," and spaces
 
 for($i = 0; $i -lt $y.Length - 2; $i++) {
-    $z += [System.Convert]::ToString(([byte]$y.Substring($i,2) + [byte]$y.Substring($i + 1,2)) + $i % 11) # Additional necessary entropy
+    # Additional necessary entropy. This is where 0 and 8 come into play in the form of $i
+    $z += [System.Convert]::ToString(([byte]$y.Substring($i,2) + [byte]$y.Substring($i + 1,2)) + $i % 11)
 }
 
 # 0 and 8 could technically be dropped but adds to entropy. 9 leaps over so replace it with 1. Replace XXXX numbers with their counterparts X
 $z = $z -replace(9,1) -replace(0000,0) -replace(1111,1) -replace(2222,2) -replace(3333,3) -replace(4444,4) -replace(5555,5) -replace(6666,6) -replace(7777,7) -replace(8888,8)
-$password = $z.Substring($z.Length % 16) # Trim to fit in a 16 byte rotations (8 shifts horizontal and 8 shifts vertical)
+$password = $z.Substring($z.Length % 16) # Trim to fit in a 16 byte rotation (8 shifts horizontal and 8 shifts vertical)
 <# End #>
 
 <# Debug info #>
 $password
 $password.Length
-break
+#break
 <# End #>
 
 <# Test data start #>
@@ -62,7 +73,7 @@ function shift_horizontal {
         [Parameter(Mandatory = $true)] [byte]$shifts
     )
 
-    if($shifts % 8 -ne 0) {
+    if($shifts % 8 -ne 0) { # Ignore 0 and 8
         [byte]$j = 0
 
         $data_temp = $data[($row * 8)..($row * 8 + 7)]
@@ -80,26 +91,26 @@ function shift_horizontal {
 
 function shift_vertical {
     param(
-        [Parameter(Mandatory = $true)] [byte]$row,
+        [Parameter(Mandatory = $true)] [byte]$column,
         [Parameter(Mandatory = $true)] [byte]$shifts
     )
 
-    if($shifts % 8 -ne 0) {
+    if($shifts % 8 -ne 0) { # Ignore 0 and 8
         [array]$data_temp = $null
         [byte]$j = 0
 
         for([byte]$i = 0; $i -le 7; $i++) {
-            $data_temp += $data[$i * 8 + $row]
+            $data_temp += $data[$i * 8 + $column]
         }
 
         $data_temp = $data_temp[$shifts..7] + $data_temp
         for($i = 0; $i -le 7; $i++) {
-            $data[$i * 8 + $row] = $data_temp[$j]
+            $data[$i * 8 + $column] = $data_temp[$j]
             $j++
         }
     }
 
-    Write-Host ("`n" + 'Vertical    ' + $row + ' ' + $shifts)
+    Write-Host ("`n" + 'Vertical    ' + $column + ' ' + $shifts)
     display_grid($data)
 }
 
@@ -121,24 +132,41 @@ function applepie {
 }
 
 applepie($data)
-Write-Host ($null)
 
-<# Decode #>
-function applepie_reverse {
+<#
+Decode functions. While shifting back again sounds very simple in principle, the programming is very,
+very different. Therefore split the decodings into two new functions. It's easier to debug, maintain,
+and optimize
+#>
+Write-Host ("`n" + '---' + "`n")
+
+<# DEVELOPMENT FROM HERE: Get the first 16 digits of the password for programming practibility #>
+
+
+
+function shift_vertical_reverse {
     param(
-        [Parameter(Mandatory = $true)] [array]$data
+        [Parameter(Mandatory = $true)] [byte]$column,
+        [Parameter(Mandatory = $true)] [byte]$shifts
     )
 
-    for([int]$i = 7; $i -ge 0; $i--) { # Integer data type because .NET is not happy about the $i-- part
-        $i = [byte]$i # Cast back to byte just for safety and memory reasons
-        $x = [byte]$password.Substring($i * 2,1) # Horizontal shift number of the block
-        $y = [byte]$password.Substring($i * 2 + 1,1) # Vertical shift number of the block
+    if($shifts % 8 -ne 0) { # Ignore 0 and 8
+        [array]$data_temp = $null
+        [byte]$j = 0
 
-        Write-Host ($i.ToString() + ' ' + $x.ToString() + ' ' + $y.ToString())
-        #shift_vertical $y $data
-        #display_grid($data)
-        #Write-Host ($null)
+        for([byte]$i = 0; $i -le 7; $i++) {
+            $data_temp += $data[$i * 8 + $column]
+        }
+
+        $data_temp = $data_temp[$shifts..7] + $data_temp
+        for($i = 0; $i -le 7; $i++) {
+            $data[$i * 8 + $column] = $data_temp[$j]
+            $j++
+        }
     }
+
+    Write-Host ("`n" + 'Vertical    ' + $column + ' ' + $shifts)
+    display_grid($data)
 }
 
-applepie_reverse($data)
+shift_vertical_reverse 7 1
