@@ -133,40 +133,8 @@ function applepie {
 
 applepie($data)
 
-<#
-Decode functions. While shifting back again sounds very simple in principle, the programming is very,
-very different. Therefore split the decodings into two new functions. It's easier to debug, maintain,
-and optimize
-#>
-Write-Host ("`n" + '---' + "`n")
+<# Decoding functions #>
+Write-Host ("`n" + '---')
 
-<# DEVELOPMENT FROM HERE: Get the first 16 digits of the password for programming practibility #>
-
-
-
-function shift_vertical_reverse {
-    param(
-        [Parameter(Mandatory = $true)] [byte]$column,
-        [Parameter(Mandatory = $true)] [byte]$shifts
-    )
-
-    if($shifts % 8 -ne 0) { # Ignore 0 and 8
-        [array]$data_temp = $null
-        [byte]$j = 0
-
-        for([byte]$i = 0; $i -le 7; $i++) {
-            $data_temp += $data[$i * 8 + $column]
-        }
-
-        $data_temp = $data_temp[$shifts..7] + $data_temp
-        for($i = 0; $i -le 7; $i++) {
-            $data[$i * 8 + $column] = $data_temp[$j]
-            $j++
-        }
-    }
-
-    Write-Host ("`n" + 'Vertical    ' + $column + ' ' + $shifts)
-    display_grid($data)
-}
-
-shift_vertical_reverse 7 1
+# 1 shift. Just add 7 to reverse the result. 7 because it's a 0 to 7 array, so 8 (8 being the grid) - 1 = 7
+shift_vertical 7 7
