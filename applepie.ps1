@@ -1,7 +1,7 @@
 Clear-Host
 
 <#
-Applepie: An 8x8 grid of shifting data horisontally and vertically to encrypt/enscure data
+Applepie: An 8x8 grid of shifting data horisontally and vertically to encrypt/obscure data
 
 1) Comments. Lots and lots of comments so anyone can easily understand what is going on
 2) Avoid division at all costs. PowerShell is already kind of a slow language and division costs a lot of CPU power
