@@ -73,6 +73,7 @@ function shift_horizontal {
     )
 
     if($shifts % 8 -ne 0) { # Ignore 0 and 8
+        [array]$data_temp = $null # Clean shop
         [byte]$j = 0
 
         $data_temp = $data[($row * 8)..($row * 8 + 7)]
@@ -95,7 +96,7 @@ function shift_vertical {
     )
 
     if($shifts % 8 -ne 0) { # Ignore 0 and 8
-        [array]$data_temp = $null
+        [array]$data_temp = $null # Clean shop
         [byte]$j = 0
 
         for([byte]$i = 0; $i -le 7; $i++) {
@@ -137,8 +138,7 @@ Write-Host ("`n" + '---')
 
 <#
 1 shift. Just add 7 to reverse the result. 7 because it's a 0 to 7 array, so 8 (8 being the grid) - 1 = 7
-1 shift in this case because the first 16 digits using the password "sn0wf1ake1" are "1681311431741751"
-and read in reverse order "1" is the first number (the ...751 part). Reversed to revert the order of encryption/scrambling
+Reversed to revert the order of encryption/scrambling
 #>
 #shift_vertical 7 7
 #shift_horizontal 7 3
