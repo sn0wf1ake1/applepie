@@ -40,7 +40,7 @@ $password
 $password.Length
 #break
 <# End #>
-ø
+
 <# Test data start #>
 function display_grid {
     param(
