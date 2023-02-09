@@ -1,13 +1,14 @@
 Clear-Host
 
 <#
-Applepie: An 8x8 grid of shifting data horisontally and vertically to encrypt/obscure data
+Applepie: An 8x8 grid of shifting data horisontally and vertically to encrypt/scramble data
 
 1) Comments. Lots and lots of comments so anyone can easily understand what is going on
 2) Avoid division at all costs. PowerShell is already kind of a slow language and division costs a lot of CPU power
 3) Avoid floating points at all costs. Sometimes it's neccesary though for things like square root
 4) Strongly defined data types, i.e. no accidental casting from byte to integer. Casting to string is unavoidable though
 5) No external modules allowed
+6) No Secure-String allowed because it only works on Windows platforms
 #>
 
 [string]$password = 'sn0wf1ake1'
@@ -31,8 +32,7 @@ for($i = 0; $i -lt $y.Length - 2; $i++) {
     $z += [System.Convert]::ToString(([byte]$y.Substring($i,2) + [byte]$y.Substring($i + 1,2)) + $i % 11)
 }
 
-# 0 and 8 could technically be dropped but adds to entropy. 9 leaps over so replace it with 1. Replace XXXX numbers with their counterparts X
-$z = $z -replace(9,1) -replace(0000,0) -replace(1111,1) -replace(2222,2) -replace(3333,3) -replace(4444,4) -replace(5555,5) -replace(6666,6) -replace(7777,7) -replace(8888,8)
+$z = $z -replace(9,$null) -replace("^(\d{3})") # 0 and 8 could technically be dropped but adds to entropy. 9 leaps over so just drop it
 $password = $z.Substring($z.Length % 16) # Trim to fit in a 16 byte rotation (8 shifts horizontal and 8 shifts vertical)
 <# End #>
 
@@ -41,7 +41,7 @@ $password
 $password.Length
 #break
 <# End #>
-
+ø
 <# Test data start #>
 function display_grid {
     param(
@@ -86,7 +86,7 @@ function shift_horizontal {
     }
 
     Write-Host ("`n" + 'Horizontal  ' + $row + ' ' + $shifts)
-    display_grid($data)
+    display_grid $data
 }
 
 function shift_vertical {
@@ -111,7 +111,7 @@ function shift_vertical {
     }
 
     Write-Host ("`n" + 'Vertical    ' + $column + ' ' + $shifts)
-    display_grid($data)
+    display_grid $data
 }
 
 function applepie {
@@ -131,10 +131,36 @@ function applepie {
     }
 }
 
-applepie($data)
+applepie $data
 
-<# Decoding functions #>
+<# Decoding #>
 Write-Host ("`n" + '---')
 
-# 1 shift. Just add 7 to reverse the result. 7 because it's a 0 to 7 array, so 8 (8 being the grid) - 1 = 7
-shift_vertical 7 7
+<#
+1 shift. Just add 7 to reverse the result. 7 because it's a 0 to 7 array, so 8 (8 being the grid) - 1 = 7
+1 shift in this case because the first 16 digits using the password "sn0wf1ake1" are "1681311431741751"
+and read in reverse order "1" is the first number (the ...751 part). Reversed to revert the order of encryption/scrambling
+#>
+#shift_vertical 7 7
+#shift_horizontal 7 3
+
+function applepie_reverse {
+    param(
+        [Parameter(Mandatory = $true)] [array]$data,
+        [Parameter(Mandatory = $true)] [byte]$password_offset # Byte type so far but will likely change to integer or big integer
+    )
+
+    [array]$password_segment = $password[($password_offset * 16)..($password_offset * 16 + 15)]
+Write-Host $password_segment
+    break
+    <#
+    Hack because .NET is not happy with the byte and $i-- part that will loop over to -1 and then needs to be recast from integer back to byte.
+    Looks a bit clumsy and strange, but is better and more secure than constant type changing, so bite the bullet and spend a CPU cycle
+    #>
+    for([byte]$i = 0; $i -le 7; $i++) {
+        [byte]$j = 7 - $i
+        Write-Host ($j)
+    }
+}
+
+applepie_reverse $data 0 # 0 in this case is the very first 16 byte password block
