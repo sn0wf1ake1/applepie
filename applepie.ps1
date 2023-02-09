@@ -32,8 +32,7 @@ for($i = 0; $i -lt $y.Length - 2; $i++) {
     $z += [System.Convert]::ToString(([byte]$y.Substring($i,2) + [byte]$y.Substring($i + 1,2)) + $i % 11)
 }
 
-$z = $z -replace(9,$null) -replace("^(\d{3})") # 0 and 8 could technically be dropped but adds to entropy. 9 leaps over so just drop it
-$password = $z.Substring($z.Length % 16) # Trim to fit in a 16 byte rotation (8 shifts horizontal and 8 shifts vertical)
+$password = $z -replace(9,$null) -replace("^(\d{3})") # 0 and 8 could technically be dropped but adds to entropy. 9 leaps over so just drop it
 <# End #>
 
 <# Debug info #>
