@@ -8,40 +8,28 @@ Applepie: An 8x8 grid of shifting data horisontally and vertically to encrypt/sc
 3) Avoid floating points at all costs. Sometimes it's neccesary though for things like square root
 4) Strongly defined data types, i.e. no accidental casting from byte to integer. Casting to string is unavoidable though
 5) No external modules allowed
-6) No Secure-String allowed because it only works on Windows platforms
+6) No Secure-String allowed because it only works on Windows
 #>
 
 [string]$password = 'sn0wf1ake1'
 $password += $password.ToUpper() + $password.ToLower() # Add entropy
-$password += $password.Length * 7 # Add more entropy. 7 because of highest single digit prime number and no fancy math::PI stuff with weird digit encoding
-$password = [Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($password)) # Universal welldocumented format automatically also adds another twist
-[string]$x,$y,$z = $null
+[object]$password_hashed = [IO.MemoryStream]::new([byte[]][char[]]$password) # SHA encoding start by casting it to on object
+[string]$password_hashed = [System.Convert]::ToString((Get-FileHash -InputStream $password_hashed -Algorithm SHA512)) # The SHA encoding here
+[string]$password_base64 = [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($password_hashed)) + $password_hashed # Universal welldocumented format automatically also adds another twist
+[string]$password_number,$x,$y,$z = $null
+[array]$table_reverse = @(7,7,6,6,5,5,4,4,3,3,2,2,1,1,0,0) # Tried to do some fancy math to get 2 numbers per loop. Forget about it and just keep it simple
 
-$password
-
-<# Passcode generation start #>
-for([int]$i = 0; $i -lt $password.Length - 2; $i++) {
-    $x += [System.Convert]::ToString([math]::Sqrt([byte][char]$password[$i] + [byte][char]$password[$i + 1] + [byte][char]$password[$i + 2]))
-    $y += $x.Substring($x.Length % 11)
+for([int]$i = 0; $i -lt 377; $i++) { # 377 because result is fixed length. Code needs to be rewritten
+    $password_number += [byte][char]$password_base64[$i]
 }
 
-$y = $y -replace "[^0-9]" # Remove all non-digit characters like "." and "," and spaces
+$password = $password_number.Replace('0',3).Replace('8',5).Replace('9',7) # 0,8,9 are "dumb" numbers so at least put them to good use
 
-for($i = 0; $i -lt $y.Length - 2; $i++) {
-    # Additional necessary entropy. This is where 0 and 8 come into play in the form of $i
-    $z += [System.Convert]::ToString(([byte]$y.Substring($i,2) + [byte]$y.Substring($i + 1,2)) + $i % 11)
-}
-
-$password = $z -replace(9,$null) -replace("^(\d{3})") # 0 and 8 could technically be dropped but adds to entropy. 9 leaps over so just drop it
-<# End #>
-
-<# Debug info #>
+<# Test and debug data start #>
 $password
 $password.Length
 #break
-<# End #>
 
-<# Test data start #>
 function display_grid {
     param(
         [Parameter(Mandatory = $true)] [array]$data
@@ -65,6 +53,7 @@ function display_grid {
                 'b','c','d','e','f','g','h','i',
                 'j','k','l','m','n','o','p','q',
                 'r','s','t','u','v','w','x','y')
+<# End #>
 
 function shift_horizontal {
     param(
@@ -72,17 +61,15 @@ function shift_horizontal {
         [Parameter(Mandatory = $true)] [byte]$shifts
     )
 
-    if($shifts % 8 -ne 0) { # Ignore 0 and 8
-        [array]$data_temp = $null # Clean shop
-        [byte]$j = 0
+    [array]$data_temp = $null # Clean shop
+    [byte]$j = 0
 
-        $data_temp = $data[($row * 8)..($row * 8 + 7)]
-        $data_temp = $data_temp[$shifts..7] + $data_temp
+    $data_temp = $data[($row * 8)..($row * 8 + 7)]
+    $data_temp = $data_temp[$shifts..7] + $data_temp
 
-        for([byte]$i = $row * 8; $i -le $row * 8 + 7; $i++) {
-            $data[$i] = $data_temp[$j]
-            $j++
-        }
+    for([byte]$i = $row * 8; $i -le $row * 8 + 7; $i++) {
+        $data[$i] = $data_temp[$j]
+        $j++
     }
 
     Write-Host ("`n" + 'Horizontal  ' + $row + ' ' + $shifts)
@@ -95,19 +82,17 @@ function shift_vertical {
         [Parameter(Mandatory = $true)] [byte]$shifts
     )
 
-    if($shifts % 8 -ne 0) { # Ignore 0 and 8
-        [array]$data_temp = $null # Clean shop
-        [byte]$j = 0
+    [array]$data_temp = $null # Clean shop
+    [byte]$j = 0
 
-        for([byte]$i = 0; $i -le 7; $i++) {
-            $data_temp += $data[$i * 8 + $column]
-        }
+    for([byte]$i = 0; $i -le 7; $i++) {
+        $data_temp += $data[$i * 8 + $column]
+    }
 
-        $data_temp = $data_temp[$shifts..7] + $data_temp
-        for($i = 0; $i -le 7; $i++) {
-            $data[$i * 8 + $column] = $data_temp[$j]
-            $j++
-        }
+    $data_temp = $data_temp[$shifts..7] + $data_temp
+    for($i = 0; $i -le 7; $i++) {
+        $data[$i * 8 + $column] = $data_temp[$j]
+        $j++
     }
 
     Write-Host ("`n" + 'Vertical    ' + $column + ' ' + $shifts)
@@ -136,30 +121,18 @@ applepie $data
 <# Decoding #>
 Write-Host ("`n" + '---')
 
-<#
-1 shift. Just add 7 to reverse the result. 7 because it's a 0 to 7 array, so 8 (8 being the grid) - 1 = 7
-Reversed to revert the order of encryption/scrambling
-#>
-#shift_vertical 7 7
-#shift_horizontal 7 3
-
 function applepie_reverse {
     param(
-        [Parameter(Mandatory = $true)] [array]$data,
-        [Parameter(Mandatory = $true)] [byte]$password_offset # Byte type so far but will likely change to integer or big integer
+        [Parameter(Mandatory = $true)] [array]$data
     )
 
-    [array]$password_segment = $password[($password_offset * 16)..($password_offset * 16 + 15)]
-Write-Host $password_segment
-    break
-    <#
-    Hack because .NET is not happy with the byte and $i-- part that will loop over to -1 and then needs to be recast from integer back to byte.
-    Looks a bit clumsy and strange, but is better and more secure than constant type changing, so bite the bullet and spend a CPU cycle
-    #>
-    for([byte]$i = 0; $i -le 7; $i++) {
-        [byte]$j = 7 - $i
-        Write-Host ($j)
+    for([byte]$i = 0; $i -le 15; $i++) {
+        if($i % 2 -eq 0) {
+            shift_vertical ([byte]$table_reverse[$i]) ([byte](8 - $password.Substring(15 - $i,1)))
+            } else {
+            shift_horizontal ([byte]$table_reverse[$i]) ([byte](8 - $password.Substring(15 - $i,1)))
+        }
     }
 }
 
-applepie_reverse $data 0 # 0 in this case is the very first 16 byte password block
+applepie_reverse $data
