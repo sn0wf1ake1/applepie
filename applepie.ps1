@@ -16,8 +16,9 @@ $password += $password.ToUpper() + $password.ToLower() # Add entropy
 [object]$password_hashed = [IO.MemoryStream]::new([byte[]][char[]]$password) # SHA encoding start by casting it to on object
 [string]$password_hashed = [System.Convert]::ToString((Get-FileHash -InputStream $password_hashed -Algorithm SHA512)) # The SHA encoding here
 [string]$password_base64 = [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($password_hashed)) + $password_hashed # Universal welldocumented format automatically also adds another twist
-[string]$password_number,$x,$y,$z = $null
+[string]$password_number = $null
 [array]$table_reverse = @(7,7,6,6,5,5,4,4,3,3,2,2,1,1,0,0) # Tried to do some fancy math to get 2 numbers per loop. Forget about it and just keep it simple
+[byte]$x,$y,$z = 0
 
 for([int]$i = 0; $i -lt 377; $i++) { # 377 because result is fixed length. Code needs to be rewritten
     $password_number += [byte][char]$password_base64[$i]
@@ -106,11 +107,13 @@ function applepie {
     [byte]$x,$y = 0
 
     for([byte]$i = 0; $i -le 15; $i++) {
+        [byte]$z = $password.Substring($i,1)
+
         if($i % 2 -eq 0) {
-            shift_horizontal $x ([byte]$password.Substring($i,1))
+            shift_horizontal $x $z
             $x++
             } else {
-            shift_vertical $y ([byte]$password.Substring($i,1))
+            shift_vertical $y $z
             $y++
         }
     }
@@ -127,10 +130,13 @@ function applepie_reverse {
     )
 
     for([byte]$i = 0; $i -le 15; $i++) {
+        [byte]$x = $table_reverse[$i]
+        [byte]$y = 8 - $password.Substring(15 - $i,1)
+
         if($i % 2 -eq 0) {
-            shift_vertical ([byte]$table_reverse[$i]) ([byte](8 - $password.Substring(15 - $i,1)))
+            shift_vertical $x $y
             } else {
-            shift_horizontal ([byte]$table_reverse[$i]) ([byte](8 - $password.Substring(15 - $i,1)))
+            shift_horizontal $x $y
         }
     }
 }
