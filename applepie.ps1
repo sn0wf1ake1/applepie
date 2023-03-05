@@ -17,7 +17,7 @@ $password += ($password.ToUpper() + $password.ToLower()) + $password.Length # Ad
 [string]$password_hashed = [System.Convert]::ToString((Get-FileHash -InputStream $password_hashed -Algorithm SHA512)) # The SHA encoding here
 [string]$password_base64 = [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($password_hashed)) + $password_hashed # Universal welldocumented format automatically also adds another twist
 [string]$password_number = $null
-[array]$table_reverse = @(7,7,6,6,5,5,4,4,3,3,2,2,1,1,0,0) # Tried to do some fancy math to get 2 numbers per loop. Forget about it and just keep it simple
+[array]$table_reverse = @(7,7,6,6,5,5,4,4,3,3,2,2,1,1,0,0) # Loop sequence for the 8x8 table
 [byte]$x,$y,$z = 0
 
 for([int]$i = 0; $i -lt 377; $i++) { # 377 because result is fixed length. Code needs to be rewritten
