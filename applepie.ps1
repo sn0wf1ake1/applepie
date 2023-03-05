@@ -12,7 +12,7 @@ Applepie: An 8x8 grid of shifting data horisontally and vertically to encrypt/sc
 #>
 
 [string]$password = 'sn0wf1ake1'
-$password += $password.ToUpper() + $password.ToLower() # Add entropy
+$password += ($password.ToUpper() + $password.ToLower()) + $password.Length # Add entropy
 [object]$password_hashed = [IO.MemoryStream]::new([byte[]][char[]]$password) # SHA encoding start by casting it to on object
 [string]$password_hashed = [System.Convert]::ToString((Get-FileHash -InputStream $password_hashed -Algorithm SHA512)) # The SHA encoding here
 [string]$password_base64 = [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($password_hashed)) + $password_hashed # Universal welldocumented format automatically also adds another twist
