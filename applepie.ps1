@@ -21,7 +21,7 @@ $password += ($password.ToUpper() + $password.ToLower()) + $password.Length # Ad
 [byte]$x,$y,$z = 0
 [int]$password_number_length = 2048
 
-do { # Spew out x * (x + 1) numbers from the seed. Maybe it a two figure digit, maybe it's not. Finally crop the specified first $password_number_length numbers
+do { # Spew out x * (x + 1) numbers from the seed. Maybe it a two figure digit, maybe it's not. Finally crop the specified last $password_number_length numbers
     for([int]$i = 0; $i -lt $password_base64.Length; $i++) {
         $password_number += [System.Convert]::ToString([byte][char]$password_base64[$i] * [byte][char]$password_base64[$i + 1])
     }
