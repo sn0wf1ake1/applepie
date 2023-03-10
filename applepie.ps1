@@ -25,7 +25,7 @@ do { # Spew out x * (x + 1) numbers from the seed. Maybe it a two figure digit, 
     for([int]$i = 0; $i -lt $password_base64.Length; $i++) {
         $password_number = $password_number + [System.Convert]::ToString([byte][char]$password_base64[$i] * [byte][char]$password_base64[$i + 1])
     }
-} while ($password_number_length -gt $password_number.Length * 1.1)
+} while ($password_number_length -gt $password_number.Length * 1.1) # Add a bit of data to make sure the cropping will succeed
 
 $password = $password_number.Substring(0,$password_number_length)
 
