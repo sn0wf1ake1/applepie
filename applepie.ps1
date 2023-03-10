@@ -17,19 +17,22 @@ $password += ($password.ToUpper() + $password.ToLower()) + $password.Length # Ad
 [string]$password_hashed = [System.Convert]::ToString((Get-FileHash -InputStream $password_hashed -Algorithm SHA512)) # The SHA encoding here
 [string]$password_base64 = [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($password_hashed)) + $password_hashed # Universal welldocumented format automatically also adds another twist
 [string]$password_number = $null
-[array]$table_reverse = @(7,7,6,6,5,5,4,4,3,3,2,2,1,1,0,0) # Loop sequence for the 8x8 table used in decoding
+[array]$table_reverse = @(7,7,6,6,5,5,4,4,3,3,2,2,1,1,0,0) # Loop sequence for the 8x8 table used in decoding. Looks stupid but it works and is easy to read
 [byte]$x,$y,$z = 0
+[int]$password_number_length = 2048
 
-for([int]$i = 0; $i -lt 377; $i++) { # 377 because result is fixed length. Code needs to be rewritten
-    $password_number += [byte][char]$password_base64[$i]
-}
+do { # Spew out x * (x + 1) numbers from the seed. Maybe it a two figure digit, maybe it's not. Finally crop the specified first $password_number_length numbers
+    for([int]$i = 0; $i -lt $password_base64.Length; $i++) {
+        $password_number = $password_number + [System.Convert]::ToString([byte][char]$password_base64[$i] * [byte][char]$password_base64[$i + 1])
+    }
+} while ($password_number_length -gt $password_number.Length * 1.1)
 
-$password = $password_number.Replace('0',3).Replace('8',5).Replace('9',7) # 0,8,9 are "dumb" numbers so at least put them to good use
+$password = $password_number.Substring(0,$password_number_length)
 
 <# Test and debug data start #>
 $password
 $password.Length
-#break
+break
 
 function display_grid {
     param(
