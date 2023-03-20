@@ -1,147 +1,140 @@
 Clear-Host
 
 <#
-Applepie: An 8x8 grid of shifting data horisontally and vertically to encrypt/scramble data
+Applepie: An 11x11 grid of shifting data horisontally and vertically to encrypt/scramble data. 11x11 was chosen because
+          an 8x8 grid would ultimately waste the numbers 0,8,9. An 11x11 block only wastes the number 0.
 
 1) Comments. Lots and lots of comments so anyone can easily understand what is going on
 2) Avoid division at all costs. PowerShell is already kind of a slow language and division costs a lot of CPU power
-3) Avoid floating points at all costs. Sometimes it's neccesary though for things like square root
+3) Avoid floats and decimals at all costs
 4) Strongly defined data types, i.e. no accidental casting from byte to integer. Casting to string is unavoidable though
-5) No external modules allowed
-6) No Secure-String allowed because it only works on Windows
+5) No external modules allowed and must work on all platforms supported by PowerShell
 #>
 
 [string]$password = 'sn0wf1ake1'
-$password += ($password.ToUpper() + $password.ToLower()) + $password.Length # Add entropy
-[object]$password_hashed = [IO.MemoryStream]::new([byte[]][char[]]$password) # SHA encoding start by casting it to on object
-[string]$password_hashed = [System.Convert]::ToString((Get-FileHash -InputStream $password_hashed -Algorithm SHA512)) # The SHA encoding here
-[string]$password_base64 = [System.Convert]::ToBase64String([System.Text.Encoding]::UTF8.GetBytes($password_hashed)) + $password_hashed # Universal welldocumented format automatically also adds another twist
-[string]$password_number = $null
-[array]$table_reverse = @(7,7,6,6,5,5,4,4,3,3,2,2,1,1,0,0) # Loop sequence for the 8x8 table used in decoding. Looks stupid but it works and is easy to read
+[string]$password_hashed = $null
+[object]$password_SHA512 = [IO.MemoryStream]::new([byte[]][char[]]$password) # SHA512 initiation
+[string]$password_SHA512 = [System.Convert]::ToString((Get-FileHash -InputStream $password_SHA512 -Algorithm SHA512).Hash) # SHA512 encoding here
+[array]$table_applepie = @(0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10)
+[array]$table_applepie_reverse = @(10,10,9,9,8,8,7,7,6,6,5,5,4,4,3,3,2,2,1,1,0,0)
 [byte]$x,$y,$z = 0
-[int]$password_number_length = 2048
 
-do { # Spew out x * (x + 1) numbers from the seed. Maybe it a two figure digit, maybe it's not. Finally crop the specified last $password_number_length numbers
-    for([int]$i = 0; $i -lt $password_base64.Length; $i++) {
-        $password_number += [System.Convert]::ToString([byte][char]$password_base64[$i] * [byte][char]$password_base64[$i + 1])
+for([byte]$i = 0; $i -lt 128; $i++) {
+    $password_hashed += [byte][char]$password_SHA512[$i]
+
+    if($i -ge 16) {
+        $password_hashed += [int]$password_hashed.Substring($i,7) * [int]$password_hashed.Substring($password_hashed.Length - 7,7)
     }
-} while ($password_number_length -gt [int]$password_number.Length * 1.1) # Add a bit of data to make sure the cropping will succeed. Also maintain a tight ship by making it [int]
+}
 
-$password = $password_number.Substring($password_number.Length - $password_number_length)
+$password = $password_hashed.Replace('0',$null)
+[string]$password_block = $password.Substring(1,22) # Take 22 digits from the long password because block is 11x11, i.e. 11 + 11 rotations
 
 <# Test and debug data start #>
 $password
 $password.Length
-break
+$password_block
+$password_block.Length
+#break
+
+[array]$data = ('A','B','C','D','E','F','G','H','§','"','#',
+                'I','J','K','L','M','N','O','P','¤','%','&',
+                'w','R','S','T','U','V','W','X','/','(',')',
+                'Y','Z','Æ','Ø','Å','1','2','3','=','?','`',
+                '4','5','6','7','8','9','0','a','§','"','1',
+                'b','c','d','e','f','g','h','i','§','"','2',
+                'j','k','l','m','n','o','p','q','§','"','3',
+                'r','s','t','u','v','w','x','y','§','"','4',
+                'A','B','C','D','E','F','G','H','§','"','5',
+                'I','J','K','L','M','N','O','P','¤','%','&',
+                'x','R','S','T','U','V','W','X','/','(',')')
 
 function display_grid {
     param(
         [Parameter(Mandatory = $true)] [array]$data
     )
 
-    Write-Host (($data[0..7] -join ' ') + "`n" +
-                ($data[8..15] -join ' ') + "`n" +
-                ($data[16..23] -join ' ') + "`n" +
-                ($data[24..31] -join ' ') + "`n" +
-                ($data[32..39] -join ' ') + "`n" +
-                ($data[40..47] -join ' ') + "`n" +
-                ($data[48..55] -join ' ') + "`n" +
-                ($data[56..63] -join ' '))
+    Write-Host (($data[0..10] -join ' ') + "`n" +
+                ($data[11..21] -join ' ') + "`n" +
+                ($data[22..32] -join ' ') + "`n" +
+                ($data[33..43] -join ' ') + "`n" +
+                ($data[44..54] -join ' ') + "`n" +
+                ($data[55..65] -join ' ') + "`n" +
+                ($data[66..76] -join ' ') + "`n" +
+                ($data[77..87] -join ' ') + "`n" +
+                ($data[88..98] -join ' ') + "`n" +
+                ($data[99..109] -join ' ') + "`n" +
+                ($data[110..121] -join ' '))
 }
-
-[array]$data = ('A','B','C','D','E','F','G','H',
-                'I','J','K','L','M','N','O','P',
-                'Q','R','S','T','U','V','W','X',
-                'Y','Z','Æ','Ø','Å','1','2','3',
-                '4','5','6','7','8','9','0','a',
-                'b','c','d','e','f','g','h','i',
-                'j','k','l','m','n','o','p','q',
-                'r','s','t','u','v','w','x','y')
 <# End #>
 
 function shift_horizontal {
     param(
         [Parameter(Mandatory = $true)] [byte]$row,
-        [Parameter(Mandatory = $true)] [byte]$shifts
+        [Parameter(Mandatory = $true)] [string]$shifts
     )
 
     [array]$data_temp = $null # Clean shop
     [byte]$j = 0
 
-    $data_temp = $data[($row * 8)..($row * 8 + 7)]
-    $data_temp = $data_temp[$shifts..7] + $data_temp
+    $data_temp = $data[($row * 11)..($row * 11 + 10)]
+    $data_temp = $data_temp[$shifts..10] + $data_temp
 
-    for([byte]$i = $row * 8; $i -le $row * 8 + 7; $i++) {
+    for([byte]$i = $row * 11; $i -le $row * 11 + 10; $i++) {
         $data[$i] = $data_temp[$j]
         $j++
     }
 
-    Write-Host ("`n" + 'Horizontal  ' + $row + ' ' + $shifts)
+    Write-Host ("`nHorizontal        " + $row + ' ' + $shifts)
     display_grid $data
 }
 
 function shift_vertical {
     param(
         [Parameter(Mandatory = $true)] [byte]$column,
-        [Parameter(Mandatory = $true)] [byte]$shifts
+        [Parameter(Mandatory = $true)] [string]$shifts
     )
 
     [array]$data_temp = $null # Clean shop
     [byte]$j = 0
 
-    for([byte]$i = 0; $i -le 7; $i++) {
-        $data_temp += $data[$i * 8 + $column]
+    for([byte]$i = 0; $i -le 10; $i++) {
+        $data_temp += $data[$i * 11 + $column]
     }
 
-    $data_temp = $data_temp[$shifts..7] + $data_temp
-    for($i = 0; $i -le 7; $i++) {
-        $data[$i * 8 + $column] = $data_temp[$j]
+    $data_temp = $data_temp[$shifts..10] + $data_temp
+    for($i = 0; $i -le 10; $i++) {
+        $data[$i * 11 + $column] = $data_temp[$j]
         $j++
     }
 
-    Write-Host ("`n" + 'Vertical    ' + $column + ' ' + $shifts)
+    Write-Host ("`nVertical          " + $column + ' ' + $shifts)
     display_grid $data
 }
 
 function applepie {
-    param(
-        [Parameter(Mandatory = $true)] [array]$data
-    )
-    [byte]$x,$y = 0
-
-    for([byte]$i = 0; $i -le 15; $i++) {
-        [byte]$z = $password.Substring($i,1)
-
+    for([byte]$i = 0; $i -lt 22; $i++) {
         if($i % 2 -eq 0) {
-            shift_horizontal $x $z
-            $x++
+            shift_horizontal $table_applepie[$i] $password_block2[$i + 1]
             } else {
-            shift_vertical $y $z
-            $y++
+            shift_vertical $table_applepie[$i] $password_block2[$i + 1]
         }
     }
 }
 
-applepie $data
-
-<# Decoding #>
-Write-Host ("`n" + '---')
+Write-Host ("`n--- ENCRYPTION START ---")
+applepie
+Write-Host ("`n--- ENCRYPTION END ---")
+#break
 
 function applepie_reverse {
-    param(
-        [Parameter(Mandatory = $true)] [array]$data
-    )
-
-    for([byte]$i = 0; $i -le 15; $i++) {
-        [byte]$x = $table_reverse[$i]
-        [byte]$y = 8 - $password.Substring(15 - $i,1)
-
-        if($i % 2 -eq 0) {
-            shift_vertical $x $y
-            } else {
-            shift_horizontal $x $y
-        }
+    for([byte]$i = 1; $i -le 22; $i++) {
+        shift_vertical $table_applepie_reverse[$i - 1] (11 - $password_block.Substring(22 - $i,1))
+        shift_horizontal $table_applepie_reverse[$i - 1] (11 - $password_block.Substring(21 - $i,1))
+        $i++
     }
 }
 
-applepie_reverse $data
+Write-Host ("`n--- DECRYPTION START ---`n")
+applepie_reverse
+Write-Host ("`n--- DECRYPTION END ---")
