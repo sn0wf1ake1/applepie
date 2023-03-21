@@ -22,7 +22,7 @@ Applepie: An 11x11 grid of shifting data horisontally and vertically to encrypt/
 for([byte]$i = 0; $i -lt 128; $i++) {
     $password_hashed += [byte][char]$password_SHA512[$i]
 
-    if($i -ge 16) {
+    if($i -gt 16) {
         $password_hashed += [int]$password_hashed.Substring($i,7) * [int]$password_hashed.Substring($password_hashed.Length - 7,7)
     }
 }
@@ -114,10 +114,12 @@ function shift_vertical {
 
 function applepie {
     for([byte]$i = 0; $i -lt 22; $i++) {
+        [byte]$j = $password_block.Substring($i,1)
+
         if($i % 2 -eq 0) {
-            shift_horizontal $table_applepie[$i] $password_block2[$i + 1]
+            shift_horizontal $table_applepie[$i] $j
             } else {
-            shift_vertical $table_applepie[$i] $password_block2[$i + 1]
+            shift_vertical $table_applepie[$i] $j
         }
     }
 }
