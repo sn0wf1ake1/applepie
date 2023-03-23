@@ -17,18 +17,14 @@ Applepie: An 11x11 grid of shifting data horisontally and vertically to encrypt/
 [string]$password_SHA512 = [System.Convert]::ToString((Get-FileHash -InputStream $password_SHA512 -Algorithm SHA512).Hash) # SHA512 encoding here
 [array]$table_applepie = @(0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10)
 [array]$table_applepie_reverse = @(10,10,9,9,8,8,7,7,6,6,5,5,4,4,3,3,2,2,1,1,0,0)
-[byte]$x,$y,$z = 0
 
-for([byte]$i = 0; $i -lt 128; $i++) {
-    $password_hashed += [byte][char]$password_SHA512[$i]
-
-    if($i -gt 16) {
-        $password_hashed += [int]$password_hashed.Substring($i,7) * [int]$password_hashed.Substring($password_hashed.Length - 7,7)
-    }
+for([byte]$i = 0; $i -lt 127; $i++) {
+    $password_hashed += [System.Math]::Pow([byte][char]$password_SHA512[$i],7)
+    $password_hashed += [int]$password_hashed.Substring($i,7) * [int]$password_hashed.Substring($password_hashed.Length - 7,7)
 }
 
 $password = $password_hashed.Replace('0',$null)
-[string]$password_block = $password.Substring(1,22) # Take 22 digits from the long password because block is 11x11, i.e. 11 + 11 rotations
+[string]$password_block = $password.Substring(0,22) # Take 22 digits from the long password because block is 11x11, i.e. 11 + 11 rotations
 [string]$password_scramble = $password.Substring($password.Length - 112) # 11x11 = 121 - 9 = 112 to prevent an out-of-bounds scenario
 
 <# Test and debug data start #>
@@ -133,12 +129,10 @@ function applepie {
     scramble
 
     for([byte]$i = 0; $i -lt 22; $i++) {
-        [byte]$j = $password_block.Substring($i,1)
-
         if($i % 2 -eq 0) {
-            shift_horizontal $table_applepie[$i] $j
+            shift_horizontal $table_applepie[$i] $password_block[$i]
             } else {
-            shift_vertical $table_applepie[$i] $j
+            shift_vertical $table_applepie[$i] $password_block[$i]
         }
     }
 }
@@ -150,8 +144,8 @@ Write-Host ("`n--- ENCRYPTION END ---")
 
 function applepie_reverse {
     for([byte]$i = 0; $i -lt 22; $i++) {
-        shift_vertical $table_applepie_reverse[$i] (11 - $password_block.Substring(21 - $i,1))
-        shift_horizontal $table_applepie_reverse[$i] (11 - $password_block.Substring(20 - $i,1))
+        shift_vertical $table_applepie_reverse[$i] (11 - [string]$password_block[21 - $i])
+        shift_horizontal $table_applepie_reverse[$i] (11 - [string]$password_block[20 - $i])
         $i++
     }
     
