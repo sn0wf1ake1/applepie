@@ -35,7 +35,7 @@ $password_block
 $password_block.Length
 $password_scramble
 $password_scramble.Length
-break
+#break
 
 [array]$data = ('A','B','C','D','E','F','G','H','§','"','#',
                 'I','J','K','L','M','N','O','P','¤','%','&',
