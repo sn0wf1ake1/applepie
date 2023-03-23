@@ -29,12 +29,15 @@ for([byte]$i = 0; $i -lt 128; $i++) {
 
 $password = $password_hashed.Replace('0',$null)
 [string]$password_block = $password.Substring(1,22) # Take 22 digits from the long password because block is 11x11, i.e. 11 + 11 rotations
+[string]$password_scramble = $password.Substring($password.Length - 112) # 11x11 = 121 - 9 = 112 to prevent an out-of-bounds scenario
 
 <# Test and debug data start #>
 $password
 $password.Length
 $password_block
 $password_block.Length
+$password_scramble
+$password_scramble.Length
 #break
 
 [array]$data = ('A','B','C','D','E','F','G','H','§','"','#',
@@ -47,13 +50,9 @@ $password_block.Length
                 'r','s','t','u','v','w','x','y','§','"','4',
                 'A','B','C','D','E','F','G','H','§','"','5',
                 'I','J','K','L','M','N','O','P','¤','%','&',
-                'x','R','S','T','U','V','W','X','/','(',')')
+                'Q','R','S','T','U','V','W','X','/','(',')')
 
 function display_grid {
-    param(
-        [Parameter(Mandatory = $true)] [array]$data
-    )
-
     Write-Host (($data[0..10] -join ' ') + "`n" +
                 ($data[11..21] -join ' ') + "`n" +
                 ($data[22..32] -join ' ') + "`n" +
@@ -86,7 +85,7 @@ function shift_horizontal {
     }
 
     Write-Host ("`nHorizontal        " + $row + ' ' + $shifts)
-    display_grid $data
+    display_grid
 }
 
 function shift_vertical {
@@ -109,10 +108,30 @@ function shift_vertical {
     }
 
     Write-Host ("`nVertical          " + $column + ' ' + $shifts)
-    display_grid $data
+    display_grid
+}
+
+function scramble {
+    for([byte]$i = 0; $i -lt 112; $i++) { # 11x11 = 121 - 9 = 112 to prevent an out-of-bounds scenario
+        [char]$x = $data[$i]
+        [char]$y = $data[$i + [string]$password_scramble[$i]] # Where the error could have happened
+        $data[$i + [string]$password_scramble[$i]] = $x # Just has to be [string] type. No idea why
+        $data[$i] = $y
+    }
+}
+
+function descramble {
+    for([byte]$i = 0; $i -lt 112; $i++) {
+        [char]$x = $data[111 - $i]
+        [char]$y = $data[111 - $i + [string]$password_scramble[111 - $i]] # Where the error could have happened
+        $data[111 - $i + [string]$password_scramble[111 - $i]] = $x # Just has to be [string] type. No idea why
+        $data[111 - $i] = $y
+    }
 }
 
 function applepie {
+    scramble
+
     for([byte]$i = 0; $i -lt 22; $i++) {
         [byte]$j = $password_block.Substring($i,1)
 
@@ -130,11 +149,15 @@ Write-Host ("`n--- ENCRYPTION END ---")
 #break
 
 function applepie_reverse {
-    for([byte]$i = 1; $i -le 22; $i++) {
-        shift_vertical $table_applepie_reverse[$i - 1] (11 - $password_block.Substring(22 - $i,1))
-        shift_horizontal $table_applepie_reverse[$i - 1] (11 - $password_block.Substring(21 - $i,1))
+    for([byte]$i = 0; $i -lt 22; $i++) {
+        shift_vertical $table_applepie_reverse[$i] (11 - $password_block.Substring(21 - $i,1))
+        shift_horizontal $table_applepie_reverse[$i] (11 - $password_block.Substring(20 - $i,1))
         $i++
     }
+    
+    Write-Host ("`nDescambled")
+    descramble
+    display_grid
 }
 
 Write-Host ("`n--- DECRYPTION START ---`n")
