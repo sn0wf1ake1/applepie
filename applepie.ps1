@@ -25,7 +25,7 @@ while($password.Length -le 4096) {
 }
 
 $password = $password.Replace('0',$null)
-$password = $password.Substring($password.Length - 2048)
+$password = $password.Substring($password.Length - 2200) # 2200 = password_block length * 100
 [string]$password_block = $password.Substring(0,22) # Take 22 digits from the long password because block is 11x11, i.e. 11 + 11 rotations
 [string]$password_scramble = $password.Substring($password.Length - 112) # 11x11 = 121 - 9 = 112 to prevent an out-of-bounds scenario
 
