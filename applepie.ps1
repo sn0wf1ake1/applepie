@@ -15,7 +15,7 @@ Applepie: An 11x11 grid of shifting data horisontally and vertically to encrypt/
 [array]$table_applepie = @(0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10)
 [array]$table_applepie_reverse = @(10,10,9,9,8,8,7,7,6,6,5,5,4,4,3,3,2,2,1,1,0,0)
 
-while($password.Length -le 4096) {
+while($password.Length -le 4096) { # Deliberately generate way overhead numbers to add to entropy
     [object]$password_SHA512 = [IO.MemoryStream]::new([byte[]][char[]]$password) # SHA512 initiation
     [string]$password_SHA512 = [System.Convert]::ToString((Get-FileHash -InputStream $password_SHA512 -Algorithm SHA512).Hash) # SHA512 encoding here
 
