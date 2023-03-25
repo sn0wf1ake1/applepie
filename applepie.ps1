@@ -12,19 +12,20 @@ Applepie: An 11x11 grid of shifting data horisontally and vertically to encrypt/
 #>
 
 [string]$password = 'sn0wf1ake1'
-[string]$password_hashed = $null
-[object]$password_SHA512 = [IO.MemoryStream]::new([byte[]][char[]]$password) # SHA512 initiation
-[string]$password_SHA512 = [System.Convert]::ToString((Get-FileHash -InputStream $password_SHA512 -Algorithm SHA512).Hash) # SHA512 encoding here
 [array]$table_applepie = @(0,0,1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10)
 [array]$table_applepie_reverse = @(10,10,9,9,8,8,7,7,6,6,5,5,4,4,3,3,2,2,1,1,0,0)
 
-for([byte]$i = 0; $i -lt 127; $i++) {
-    $password_hashed += [System.Math]::Pow([byte][char]$password_SHA512[$i],7)
-    $password_hashed += [int]$password_hashed.Substring($i,7) * [int]$password_hashed.Substring($password_hashed.Length - 7,7)
+while($password.Length -le 4096) {
+    [object]$password_SHA512 = [IO.MemoryStream]::new([byte[]][char[]]$password) # SHA512 initiation
+    [string]$password_SHA512 = [System.Convert]::ToString((Get-FileHash -InputStream $password_SHA512 -Algorithm SHA512).Hash) # SHA512 encoding here
+
+    for([byte]$j = 0; $j -lt 128; $j++) {   
+        $password += [byte][char]$password_SHA512[$j] % 10
+    }
 }
 
-$password = $password_hashed.Replace('0',$null)
-$password = $password.Substring($password.Length - 2200) # 2200 = password_block length * 100
+$password = $password.Replace('0',$null)
+$password = $password.Substring($password.Length - 2048)
 [string]$password_block = $password.Substring(0,22) # Take 22 digits from the long password because block is 11x11, i.e. 11 + 11 rotations
 [string]$password_scramble = $password.Substring($password.Length - 112) # 11x11 = 121 - 9 = 112 to prevent an out-of-bounds scenario
 
